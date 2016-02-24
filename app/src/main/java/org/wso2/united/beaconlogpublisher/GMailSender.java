@@ -1,5 +1,6 @@
 package org.wso2.united.beaconlogpublisher;
 
+import android.content.Context;
 import android.os.Environment;
 import android.util.Log;
 
@@ -35,14 +36,16 @@ public class GMailSender extends javax.mail.Authenticator {
     private String user;
     private String password;
     private Session session;
+    Context context;
 
     static {
         Security.addProvider(new JSSEProvider());
     }
 
-    public GMailSender(String user, String password) {
+    public GMailSender(String user, String password,Context context) {
         this.user = user;
         this.password = password;
+        this.context = context;
 
         Properties props = new Properties();
         props.setProperty("mail.transport.protocol", "smtp");
@@ -70,7 +73,7 @@ public class GMailSender extends javax.mail.Authenticator {
      * @param recipients
      * @throws Exception
      */
-    public void sendMail(String subject, String body, String sender, String recipients, String deviceId, boolean isStopped) throws Exception {
+    public void sendMail(String subject, String body, String sender, String recipients, String deviceId, boolean isStopped,Context context) throws Exception {
         try {
             String currentlyUsedLogfile = null;
             boolean attachmentsAvailable = false;
@@ -86,7 +89,6 @@ public class GMailSender extends javax.mail.Authenticator {
 
             if (isStopped) {
                 for (File file : files) {
-                    SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy-HH-mm");
                     addAttachment(multipart, file.getAbsolutePath());
                     body += "\n" + file.getAbsolutePath();
                     attachmentsAvailable = true;
@@ -117,26 +119,36 @@ public class GMailSender extends javax.mail.Authenticator {
                 // Put parts in message
                 message.setContent(multipart);
                 Transport.send(message);
-                deleteSentFiles(currentlyUsedLogfile);
+                deleteSentFiles(currentlyUsedLogfile, isStopped);
             }
         } catch (Exception e) {
             Log.e("Error composing mail", e.getMessage());
         }
     }
 
+
+
     /**
      * Delete the files
      *
      * @param currentlyUsedLogfile name of the log files to which the logs are currently written
      */
-    private void deleteSentFiles(String currentlyUsedLogfile) {
+    private void deleteSentFiles(String currentlyUsedLogfile,boolean isStopped) {
         File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath());
         FileFilter fileFilter = new WildcardFileFilter("beaconlog*");
         File[] files = dir.listFiles(fileFilter);
-        for (File file : files) {
-            if (!currentlyUsedLogfile.equals(file.getName())) {
+        if(isStopped){
+            for (File file : files) {
                 boolean isDeleted = file.delete();
                 Log.e("Deleted : " + file.getName(), " : " + isDeleted);
+            }
+        }
+        else if(currentlyUsedLogfile != null){
+            for (File file : files) {
+                if (!currentlyUsedLogfile.equals(file.getName())) {
+                    boolean isDeleted = file.delete();
+                    Log.e("Deleted : " + file.getName(), " : " + isDeleted);
+                }
             }
         }
     }

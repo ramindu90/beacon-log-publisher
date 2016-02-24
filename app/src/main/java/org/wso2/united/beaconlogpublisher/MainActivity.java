@@ -1,20 +1,19 @@
 package org.wso2.united.beaconlogpublisher;
 
 import android.app.AlertDialog;
-import android.support.v7.app.ActionBarActivity;
-import android.os.Bundle;
-
-import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.RemoteException;
 import android.provider.Settings;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -53,7 +52,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
     private BeaconManager beaconManager;
     private Queue<BeaconDataRecord> queue;
     private LocationManager locationManager;
-    private ScheduledExecutorService fileWriteScheduler, emailScheduler;
+    private ScheduledExecutorService fileWriteScheduler, emailScheduler,emailScheduler2;
 
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 1000;
     private Location mLastLocation;
@@ -77,7 +76,9 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
     String senderPassword = "qwertypo123";
     String recepientEmail= "beaconlog.publisher@gmail.com";;
 
-    Context context = this;
+    final  Context context = this;
+
+
 
     //todo for gps logs
     String airportCode = "ORD";
@@ -89,6 +90,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
 
     boolean loggingStarted = false;
     boolean emailStarted = false;
+   // boolean isStopped=true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,6 +107,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
             buildGoogleApiClient();
             createLocationRequest();
             mRequestingLocationUpdates = true;
+
 
         } catch (Throwable e) {
             Log.e("ERROR On create", e.getMessage());
@@ -156,7 +159,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                 @Override
                 public void run() {
                     try {
-                        sendEmailAttachment(false);
+                        sendEmailAttachment(false, context);
                     } catch (Throwable e) {
                         emailScheduler.shutdown();
                         emailStarted = false;
@@ -173,7 +176,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
 
                     }
                 }
-            }, 0, 2, TimeUnit.MINUTES);
+            }, 0, 5, TimeUnit.MINUTES);
         }
     }
 
@@ -182,14 +185,22 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
      * @param view
      */
     public void stopCollectingData(View view){
-        beaconManager.unbind(this);
-        fileWriteScheduler.shutdown();
         emailScheduler.shutdown();
-        startButton.setEnabled(false);
-        endButton.setEnabled(false);
-        saveEmailButton.setEnabled(true);
         try {
-            sendEmailAttachment(true);
+            EmailSender sender = new EmailSender();
+            sender.execute(senderEmail, recepientEmail);
+
+            beaconManager.unbind(this);
+            fileWriteScheduler.shutdown();
+
+            startButton.setEnabled(false);
+            endButton.setEnabled(false);
+            saveEmailButton.setEnabled(true);
+            senderEmailText.setEnabled(true);
+            senderPasswordText.setEnabled(true);
+            recipientEmailText.setEnabled(true);
+            sender.cancel(true);
+            loggingStarted = false;
         } catch (Exception e) {
             AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
             dlgAlert.setMessage("Configure mail again before starting process");
@@ -198,6 +209,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
             dlgAlert.setCancelable(true);
             dlgAlert.create().show();
         }
+
     }
 
     /**
@@ -230,17 +242,21 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
         startButton.setEnabled(true);
         endButton.setEnabled(false);
         saveEmailButton.setEnabled(false);
+
+        senderEmailText.setEnabled(false);
+        senderPasswordText.setEnabled(false);
+        recipientEmailText.setEnabled(false);
     }
 
     /**
      * Send the mail containing the attachments
      */
-    private void sendEmailAttachment(boolean isStopped) throws Exception {
+    private void sendEmailAttachment(boolean isStopped, final Context context) throws Exception {
         try {
-            GMailSender sender = new GMailSender(senderEmail, senderPassword);
+            GMailSender sender = new GMailSender(senderEmail, senderPassword,context);
             String subject = "Beacon/location Logs";
             String body = "Please find the attached beacon and location log files. \n";
-            sender.sendMail(subject, body, senderEmail, recepientEmail, deviceId, isStopped);
+            sender.sendMail(subject, body, senderEmail, recepientEmail, deviceId, isStopped,context);
 
             this.runOnUiThread(new Runnable() {
                 public void run() {
@@ -388,9 +404,8 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                         Toast.makeText(context, "Data logging started: " + logFileName, Toast.LENGTH_LONG).show();
                     }
                 });
-//                Toast.makeText(context, "logging data to file: " + logFile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
+
             }
-            //BufferedWriter for performance, true to set append to file flag
             buf = new BufferedWriter(new FileWriter(logFile, true));
             buf.append(logString);
             buf.newLine();
@@ -507,5 +522,32 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
     @Override
     public void onProviderDisabled(String provider) {
 
+    }
+    private class EmailSender extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected String doInBackground(String[] params) {
+            // do above Server call here
+            GMailSender sender = new GMailSender(senderEmail, recepientEmail,context);
+            String subject = "Beacon/location Logs";
+            String body = "Please find the attached beacon and location log files. \n";
+            try {
+                sender.sendMail(subject, body, senderEmail, recepientEmail, deviceId,true,context);
+                Handler handler =  new Handler(context.getMainLooper());
+                handler.post(new Runnable() {
+                    public void run() {
+                        Toast.makeText(context, "Email sent to " + senderEmail, Toast.LENGTH_LONG).show();
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String message) {
+            //process message
+        }
     }
 }
