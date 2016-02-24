@@ -1,5 +1,6 @@
 package org.wso2.united.beaconlogpublisher;
 
+import android.app.AlertDialog;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 
@@ -70,6 +71,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
     TextView recipientEmailText;
     Button startButton;
     Button endButton;
+    Button saveEmailButton;
 
     String senderEmail = "beaconlog.publisher@gmail.com";;
     String senderPassword = "qwertypo123";
@@ -84,6 +86,9 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
     private int fenceAltitude = 0;
     private double fenceBearing = 0.0d;
     private double fenceSpeed = 0.0d;
+
+    boolean loggingStarted = false;
+    boolean emailStarted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,6 +124,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
 
         endButton.setEnabled(true);
         startButton.setEnabled(false);
+        saveEmailButton.setEnabled(false);
 
         // beacon data
         beaconManager = BeaconManager.getInstanceForApplication(this);
@@ -127,44 +133,71 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
         beaconManager.bind(this);
 
         // write to file - every 5 seconds
-        fileWriteScheduler = Executors.newSingleThreadScheduledExecutor();
-        fileWriteScheduler.scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    publishBeaconData();
-                } catch (Throwable e) {
-                    Log.e("Error : log beacon data", e.getMessage());
+        if(!loggingStarted){
+            loggingStarted = true;
+            fileWriteScheduler = Executors.newSingleThreadScheduledExecutor();
+            fileWriteScheduler.scheduleWithFixedDelay(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        publishBeaconData();
+                    } catch (Throwable e) {
+                        Log.e("Error : log beacon data", e.getMessage());
+                    }
                 }
-            }
-        }, 0, 5, TimeUnit.SECONDS);
+            }, 0, 5, TimeUnit.SECONDS);
+        }
 
-        // send email attachment - every hour
-        emailScheduler = Executors.newSingleThreadScheduledExecutor();
-        emailScheduler.scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    sendEmailAttachment(false);
-                } catch (Throwable e) {
-                    Log.e("Error : send email", e.getMessage());
+        if(!emailStarted){
+            // send email attachment - every hour
+            emailStarted = true;
+            emailScheduler = Executors.newSingleThreadScheduledExecutor();
+            emailScheduler.scheduleWithFixedDelay(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        sendEmailAttachment(false);
+                    } catch (Throwable e) {
+                        emailScheduler.shutdown();
+                        emailStarted = false;
+                        AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
+                        dlgAlert.setMessage("Configure mail and start process again");
+                        dlgAlert.setTitle("Sending email error:" + e.getMessage());
+                        dlgAlert.setPositiveButton("OK", null);
+                        dlgAlert.setCancelable(true);
+                        dlgAlert.create().show();
+                        saveEmailButton.setEnabled(true);
+                        startButton.setEnabled(false);
+                        endButton.setEnabled(false);
+                        Log.e("Error : sending email", e.getMessage());
+
+                    }
                 }
-            }
-        }, 0, 5, TimeUnit.MINUTES);
-
+            }, 0, 2, TimeUnit.MINUTES);
+        }
     }
 
     /**
      * Stop collecting location and beacon data
      * @param view
      */
-    public void stopCollectingData(View view) {
+    public void stopCollectingData(View view){
         beaconManager.unbind(this);
         fileWriteScheduler.shutdown();
         emailScheduler.shutdown();
-        startButton.setEnabled(true);
+        startButton.setEnabled(false);
         endButton.setEnabled(false);
-        sendEmailAttachment(true);
+        saveEmailButton.setEnabled(true);
+        try {
+            sendEmailAttachment(true);
+        } catch (Exception e) {
+            AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
+            dlgAlert.setMessage("Configure mail again before starting process");
+            dlgAlert.setTitle("Sending email error:" + e.getMessage());
+            dlgAlert.setPositiveButton("OK", null);
+            dlgAlert.setCancelable(true);
+            dlgAlert.create().show();
+        }
     }
 
     /**
@@ -179,8 +212,10 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
         recipientEmailText.setText(recepientEmail);
         startButton = (Button)findViewById(R.id.startButton);
         endButton = (Button)findViewById(R.id.endButton);
+        saveEmailButton = (Button)findViewById(R.id.save_email);
+
         endButton.setEnabled(false);
-        startButton.setEnabled(true);
+        startButton.setEnabled(false);
     }
 
     /**
@@ -192,21 +227,22 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
         senderPassword = senderPasswordText.getText().toString();
         recepientEmail = recipientEmailText.getText().toString();
 
-//        senderEmail.setVisibility(View.GONE);
-
+        startButton.setEnabled(true);
+        endButton.setEnabled(false);
+        saveEmailButton.setEnabled(false);
     }
 
     /**
      * Send the mail containing the attachments
      */
-    private void sendEmailAttachment(boolean isStopped) {
+    private void sendEmailAttachment(boolean isStopped) throws Exception {
         try {
             GMailSender sender = new GMailSender(senderEmail, senderPassword);
             String subject = "Beacon/location Logs";
             String body = "Please find the attached beacon and location log files. \n";
             sender.sendMail(subject, body, senderEmail, recepientEmail, deviceId, isStopped);
         } catch (Exception e) {
-            Log.e("Error sending mail", e.getMessage());
+            throw e;
         }
     }
 
@@ -272,7 +308,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                 jsonObj.put("beaconDistance", record.getDistance());
                 jsonObj.put("beaconMajor", record.getMajor());
                 jsonObj.put("beaconMinor", record.getMinor());
-                jsonObj.put("rssi", record.getRssi());
+                jsonObj.put("beaconRssi", record.getRssi());
                 jsonObj.put("beaconUuid", record.getUuid());
                 jsonObj.put("deviceId", deviceId);
                 jsonObj.put("eventType", record.getEventType());
@@ -284,7 +320,8 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                 jsonObj.put("fenceLongitude", record.getFenceLongitude());
                 jsonObj.put("fenceSpeed", record.getFenceSpeed());
                 jsonObj.put("name", record.getName());
-                jsonObj.put("fenceIdentifier", record.getTimestamp());
+                jsonObj.put("fenceIdentifier", record.getFenceIdentifier());
+                jsonObj.put("timestamp", System.currentTimeMillis());
 
                 logString = jsonObj.toString();
                 jsonObj = new JSONObject();
@@ -295,7 +332,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                     jsonObj.put("beaconDistance", dataRecord.getDistance());
                     jsonObj.put("beaconMajor", dataRecord.getMajor());
                     jsonObj.put("beaconMinor", dataRecord.getMinor());
-                    jsonObj.put("rssi", dataRecord.getRssi());
+                    jsonObj.put("beaconRssi", dataRecord.getRssi());
                     jsonObj.put("beaconUuid", dataRecord.getUuid());
                     jsonObj.put("deviceId", deviceId);
                     jsonObj.put("eventType", dataRecord.getEventType());
@@ -307,7 +344,8 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                     jsonObj.put("fenceLongitude", dataRecord.getFenceLongitude());
                     jsonObj.put("fenceSpeed", dataRecord.getFenceSpeed());
                     jsonObj.put("name", dataRecord.getName());
-                    jsonObj.put("fenceIdentifier", dataRecord.getTimestamp());
+                    jsonObj.put("fenceIdentifier", dataRecord.getFenceIdentifier());
+                    jsonObj.put("timestamp", System.currentTimeMillis());
                     logString += "\n" + jsonObj.toString();
                     jsonObj = new JSONObject();
 
@@ -337,6 +375,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
             File logFile = new File(Environment.getExternalStorageDirectory(), fileName);
             if (!logFile.exists()) {
                 logFile.createNewFile();
+//                Toast.makeText(context, "logging data to file: " + logFile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
             }
             //BufferedWriter for performance, true to set append to file flag
             buf = new BufferedWriter(new FileWriter(logFile, true));
