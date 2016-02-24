@@ -21,37 +21,41 @@
 
     <EditText android:id="@+id/enter_sender_email_txt"
         android:layout_width="wrap_content"
+        android:textAlignment="center"
         android:layout_height="wrap_content"
         android:hint="@string/enter_sender_email" />
 
     <EditText android:id="@+id/enter_sender_password_txt"
         android:layout_width="wrap_content"
+        android:textAlignment="center"
         android:layout_height="wrap_content"
         android:hint="@string/enter_sender_password"
         android:inputType="textPassword" />
 
     <EditText android:id="@+id/enter_recipient_email_txt"
         android:layout_width="wrap_content"
+        android:textAlignment="center"
         android:layout_height="wrap_content"
         android:hint="@string/enter_recipient_email" />
 
     <Button
         android:id="@+id/save_email"
-        android:layout_width="wrap_content"
+        android:layout_width="115dp"
         android:layout_height="wrap_content"
         android:text="@string/button_save"
         android:onClick="saveEmailAddress" />
 
     <Button
         android:id="@+id/startButton"
-        android:layout_width="wrap_content"
+        android:layout_width="115dp"
         android:layout_height="wrap_content"
         android:text="@string/button_start"
         android:onClick="startCollectingData" />
 
     <Button
         android:id="@+id/endButton"
-        android:layout_width="wrap_content"
+
+        android:layout_width="115dp"
         android:layout_height="wrap_content"
         android:text="@string/button_stop"
         android:onClick="stopCollectingData" />
