@@ -63,14 +63,15 @@ public class GMailSender extends javax.mail.Authenticator {
 
     /**
      * Send email with attachments
+     *
      * @param subject
      * @param body
      * @param sender
      * @param recipients
      * @throws Exception
      */
-    public void sendMail(String subject, String body, String sender, String recipients, String deviceId,boolean isStopped) throws Exception {
-        try{
+    public void sendMail(String subject, String body, String sender, String recipients, String deviceId, boolean isStopped) throws Exception {
+        try {
             String currentlyUsedLogfile = null;
             boolean attachmentsAvailable = false;
             MimeMessage message = new MimeMessage(session);
@@ -83,21 +84,18 @@ public class GMailSender extends javax.mail.Authenticator {
             FileFilter fileFilter = new WildcardFileFilter("beaconlog*");
             File[] files = dir.listFiles(fileFilter);
 
-            if(isStopped){
+            if (isStopped) {
                 for (File file : files) {
                     SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy-HH-mm");
-
-                        addAttachment(multipart, file.getAbsolutePath());
-                        body += "\n" + file.getAbsolutePath();
-                        attachmentsAvailable = true;
+                    addAttachment(multipart, file.getAbsolutePath());
+                    body += "\n" + file.getAbsolutePath();
+                    attachmentsAvailable = true;
                 }
-            }
-            else {
+            } else {
                 for (File file : files) {
                     SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy-HH-mm");
                     currentlyUsedLogfile = "beaconlog-" + deviceId + "-" + format.format(new Date()) + ".log";
-
-                   if (!currentlyUsedLogfile.equals(file.getName())) {
+                    if (!currentlyUsedLogfile.equals(file.getName())) {
                         addAttachment(multipart, file.getAbsolutePath());
                         body += "\n" + file.getAbsolutePath();
                         attachmentsAvailable = true;
@@ -105,7 +103,7 @@ public class GMailSender extends javax.mail.Authenticator {
                 }
             }
 
-            if(attachmentsAvailable) {
+            if (attachmentsAvailable) {
                 if (recipients.indexOf(',') > 0) {
                     message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipients));
                 } else {
@@ -128,6 +126,7 @@ public class GMailSender extends javax.mail.Authenticator {
 
     /**
      * Delete the files
+     *
      * @param currentlyUsedLogfile name of the log files to which the logs are currently written
      */
     private void deleteSentFiles(String currentlyUsedLogfile) {
@@ -135,7 +134,7 @@ public class GMailSender extends javax.mail.Authenticator {
         FileFilter fileFilter = new WildcardFileFilter("beaconlog*");
         File[] files = dir.listFiles(fileFilter);
         for (File file : files) {
-            if(!currentlyUsedLogfile.equals(file.getName())) {
+            if (!currentlyUsedLogfile.equals(file.getName())) {
                 boolean isDeleted = file.delete();
                 Log.e("Deleted : " + file.getName(), " : " + isDeleted);
             }
@@ -144,6 +143,7 @@ public class GMailSender extends javax.mail.Authenticator {
 
     /**
      * Prepare email attachments
+     *
      * @param filename file to be added as attachment
      * @throws Exception
      */

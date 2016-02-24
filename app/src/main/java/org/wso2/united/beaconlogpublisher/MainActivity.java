@@ -77,6 +77,14 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
 
     Context context = this;
 
+    //todo for gps logs
+    String airportCode = "ORD";
+    private String eventType = "ENTER";
+    private double fenceAccuracy = 0.0d;
+    private int fenceAltitude = 0;
+    private double fenceBearing = 0.0d;
+    private double fenceSpeed = 0.0d;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         try {
@@ -142,7 +150,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                     Log.e("Error : send email", e.getMessage());
                 }
             }
-        }, 0, 10, TimeUnit.MINUTES);
+        }, 0, 5, TimeUnit.MINUTES);
 
     }
 
@@ -196,7 +204,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
             GMailSender sender = new GMailSender(senderEmail, senderPassword);
             String subject = "Beacon/location Logs";
             String body = "Please find the attached beacon and location log files. \n";
-            sender.sendMail(subject, body, senderEmail, recepientEmail, deviceId,isStopped);
+            sender.sendMail(subject, body, senderEmail, recepientEmail, deviceId, isStopped);
         } catch (Exception e) {
             Log.e("Error sending mail", e.getMessage());
         }
@@ -227,6 +235,9 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                             beaconDataRecord.setMinor(String.valueOf(beacon.getId3()));
                             beaconDataRecord.setDistance(String.valueOf(beacon.getDistance()));
                             beaconDataRecord.setRssi(String.valueOf(beacon.getRssi()));
+                            beaconDataRecord.setBeaconType(String.valueOf(beacon.getBluetoothName()));
+                            beaconDataRecord.setName(String.valueOf(beacon.getBluetoothName()));
+                            beaconDataRecord.setTimestamp(System.currentTimeMillis());
                             queue.add(beaconDataRecord);
                         }
                     }
@@ -254,31 +265,71 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
             showLocation();
             JSONObject jsonObj = new JSONObject();
 
-            if (mLastLocation != null) {
-                Double latitude = mLastLocation.getLatitude();
-                Double longitude = mLastLocation.getLongitude();
 
-                jsonObj.put("timestamp", System.currentTimeMillis());
-                jsonObj.put("latitude", latitude);
-                jsonObj.put("longitude", longitude);
-            }
             BeaconDataRecord record = queue.poll();
             if (record != null) {
-                jsonObj.put("beaconUuid", record.getUuid());
+                jsonObj.put("airportCode", record.getAirportCode());
+                jsonObj.put("beaconDistance", record.getDistance());
                 jsonObj.put("beaconMajor", record.getMajor());
                 jsonObj.put("beaconMinor", record.getMinor());
-                jsonObj.put("distance", record.getDistance());
                 jsonObj.put("rssi", record.getRssi());
-            }
-            logString = jsonObj.toString();
-            while (!queue.isEmpty()) {
-                BeaconDataRecord dataRecord = queue.poll();
-                jsonObj.put("beaconUuid", dataRecord.getUuid());
-                jsonObj.put("beaconMajor", dataRecord.getMajor());
-                jsonObj.put("beaconMinor", dataRecord.getMinor());
-                jsonObj.put("distance", dataRecord.getDistance());
-                jsonObj.put("rssi", dataRecord.getRssi());
-                logString += "\n" + jsonObj.toString();
+                jsonObj.put("beaconUuid", record.getUuid());
+                jsonObj.put("deviceId", deviceId);
+                jsonObj.put("eventType", record.getEventType());
+                jsonObj.put("fenceAccuracy", record.getFenceAccuracy());
+                jsonObj.put("fenceAltitude", record.getFenceAltitude());
+                jsonObj.put("fenceBearing", record.getFenceBearing());
+                jsonObj.put("fenceIdentifier", record.getFenceIdentifier());
+                jsonObj.put("fenceLatitude", record.getFenceLatitude());
+                jsonObj.put("fenceLongitude", record.getFenceLongitude());
+                jsonObj.put("fenceSpeed", record.getFenceSpeed());
+                jsonObj.put("name", record.getName());
+                jsonObj.put("fenceIdentifier", record.getTimestamp());
+
+                logString = jsonObj.toString();
+                jsonObj = new JSONObject();
+
+                while (!queue.isEmpty()) {
+                    BeaconDataRecord dataRecord = queue.poll();
+                    jsonObj.put("airportCode", dataRecord.getAirportCode());
+                    jsonObj.put("beaconDistance", dataRecord.getDistance());
+                    jsonObj.put("beaconMajor", dataRecord.getMajor());
+                    jsonObj.put("beaconMinor", dataRecord.getMinor());
+                    jsonObj.put("rssi", dataRecord.getRssi());
+                    jsonObj.put("beaconUuid", dataRecord.getUuid());
+                    jsonObj.put("deviceId", deviceId);
+                    jsonObj.put("eventType", dataRecord.getEventType());
+                    jsonObj.put("fenceAccuracy", dataRecord.getFenceAccuracy());
+                    jsonObj.put("fenceAltitude", dataRecord.getFenceAltitude());
+                    jsonObj.put("fenceBearing", dataRecord.getFenceBearing());
+                    jsonObj.put("fenceIdentifier", dataRecord.getFenceIdentifier());
+                    jsonObj.put("fenceLatitude", dataRecord.getFenceLatitude());
+                    jsonObj.put("fenceLongitude", dataRecord.getFenceLongitude());
+                    jsonObj.put("fenceSpeed", dataRecord.getFenceSpeed());
+                    jsonObj.put("name", dataRecord.getName());
+                    jsonObj.put("fenceIdentifier", dataRecord.getTimestamp());
+                    logString += "\n" + jsonObj.toString();
+                    jsonObj = new JSONObject();
+
+                }
+            //sending gps log if  no beacon logs aren't retrieved
+            } else {
+                if (mLastLocation != null) {
+                    Double latitude = mLastLocation.getLatitude();
+                    Double longitude = mLastLocation.getLongitude();
+
+                    jsonObj.put("airportCode", airportCode);
+                    jsonObj.put("deviceId", deviceId);
+                    jsonObj.put("eventType", eventType);
+                    jsonObj.put("fenceAccuracy", fenceAccuracy);
+                    jsonObj.put("fenceAltitude", fenceAltitude);
+                    jsonObj.put("fenceBearing", fenceBearing);
+                    jsonObj.put("fenceLatitude", latitude);
+                    jsonObj.put("fenceLongitude", longitude);
+                    jsonObj.put("fenceSpeed", fenceSpeed);
+                    jsonObj.put("timestamp", System.currentTimeMillis());
+                }
+                logString = jsonObj.toString();
             }
 
             SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy-HH");
