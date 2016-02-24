@@ -241,6 +241,13 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
             String subject = "Beacon/location Logs";
             String body = "Please find the attached beacon and location log files. \n";
             sender.sendMail(subject, body, senderEmail, recepientEmail, deviceId, isStopped);
+
+            this.runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(context, "Email sent to " + senderEmail, Toast.LENGTH_LONG).show();
+                }
+            });
+
         } catch (Exception e) {
             throw e;
         }
@@ -375,6 +382,12 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
             File logFile = new File(Environment.getExternalStorageDirectory(), fileName);
             if (!logFile.exists()) {
                 logFile.createNewFile();
+                final String logFileName = logFile.getAbsolutePath();
+                this.runOnUiThread(new Runnable() {
+                    public void run() {
+                        Toast.makeText(context, "Data logging started: " + logFileName, Toast.LENGTH_LONG).show();
+                    }
+                });
 //                Toast.makeText(context, "logging data to file: " + logFile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
             }
             //BufferedWriter for performance, true to set append to file flag
