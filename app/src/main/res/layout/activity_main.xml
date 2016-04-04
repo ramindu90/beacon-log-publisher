@@ -19,31 +19,31 @@
         android:layout_weight="1"
         android:src="@drawable/beacon_logo" />
 
-    <EditText android:id="@+id/enter_sender_email_txt"
+    <EditText android:id="@+id/username"
         android:layout_width="wrap_content"
         android:textAlignment="center"
         android:layout_height="wrap_content"
-        android:hint="@string/enter_sender_email" />
+        android:hint="@string/username" />
 
-    <EditText android:id="@+id/enter_sender_password_txt"
+    <EditText android:id="@+id/user_role"
         android:layout_width="wrap_content"
         android:textAlignment="center"
         android:layout_height="wrap_content"
-        android:hint="@string/enter_sender_password"
-        android:inputType="textPassword" />
+        android:hint="@string/user_role" />
 
-    <EditText android:id="@+id/enter_recipient_email_txt"
-        android:layout_width="wrap_content"
-        android:textAlignment="center"
+    <Spinner
+        android:layout_width="115dp"
         android:layout_height="wrap_content"
-        android:hint="@string/enter_recipient_email" />
+        android:id="@+id/airportCodeSpinner"
+        android:layout_gravity="center_horizontal"
+        android:textColor="#80D8FF" />
 
     <Button
-        android:id="@+id/save_email"
+        android:id="@+id/save_user_detail"
         android:layout_width="115dp"
         android:layout_height="wrap_content"
         android:text="@string/button_save"
-        android:onClick="saveEmailAddress" />
+        android:onClick="saveUserDetails" />
 
     <Button
         android:id="@+id/startButton"
@@ -54,7 +54,6 @@
 
     <Button
         android:id="@+id/endButton"
-
         android:layout_width="115dp"
         android:layout_height="wrap_content"
         android:text="@string/button_stop"

@@ -5,10 +5,11 @@ public class BeaconDataRecord {
     private String uuid;
     private String major;
     private String minor;
-    private String distance;
-    private String rssi;
+    private double distance;
+    private int rssi;
     private String proximity;
     private String beaconType; //todo: how?
+    private String allData;
 
     //todo: automate the values
     private String airportCode = "ORD";
@@ -47,19 +48,19 @@ public class BeaconDataRecord {
         this.minor = minor;
     }
 
-    public String getDistance() {
+    public double getDistance() {
         return distance;
     }
 
-    public void setDistance(String distance) {
+    public void setDistance(double distance) {
         this.distance = distance;
     }
 
-    public String getRssi() {
+    public int getRssi() {
         return rssi;
     }
 
-    public void setRssi(String rssi) {
+    public void setRssi(int rssi) {
         this.rssi = rssi;
     }
 
@@ -165,5 +166,13 @@ public class BeaconDataRecord {
 
     public void setFenceSpeed(double fenceSpeed) {
         this.fenceSpeed = fenceSpeed;
+    }
+
+    public String getAllData() {
+        return allData;
+    }
+
+    public void setAllData(String allData) {
+        this.allData = allData;
     }
 }
