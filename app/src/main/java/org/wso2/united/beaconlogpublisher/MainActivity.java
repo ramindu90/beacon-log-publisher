@@ -142,7 +142,6 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
             createLocationRequest();
             mRequestingLocationUpdates = true;
 
-
         } catch (Throwable e) {
             Log.e("ERROR On create", e.getMessage());
         }
@@ -174,7 +173,6 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                     .setBeaconLayout("m:2-3=beac,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"));
             beaconManager.getBeaconParsers().add(new BeaconParser()
                     .setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19"));
-
 
             beaconManager.bind(this);
 
