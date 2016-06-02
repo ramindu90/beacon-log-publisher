@@ -88,10 +88,11 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
     Button saveUserDetailButton;
     Spinner airportCodeSpinner;
 
-    String username = "test";;
+    String username = "test";
+    ;
     String user_role = "cleaning";
 
-    final  Context context = this;
+    final Context context = this;
 
 
     SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
@@ -108,7 +109,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
 
 
     boolean receiverStarted = false;
-   // boolean isStopped=true;
+    // boolean isStopped=true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,20 +119,20 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
             initUIFields();
 
             airportCodeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                 @Override
-                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                     airportCode = airportCodeSpinner.getSelectedItem().toString();
-                     TextView selectedText = (TextView) parent.getChildAt(0);
-                     if (selectedText != null) {
-                         selectedText.setTextColor(Color.parseColor("#80D8FF"));
-                     }
-                 }
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    airportCode = airportCodeSpinner.getSelectedItem().toString();
+                    TextView selectedText = (TextView) parent.getChildAt(0);
+                    if (selectedText != null) {
+                        selectedText.setTextColor(Color.parseColor("#80D8FF"));
+                    }
+                }
 
-                 @Override
-                 public void onNothingSelected(AdapterView<?> parent) {
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
 
-                 }
-             });
+                }
+            });
             queue = new ConcurrentLinkedQueue<BeaconDataRecord>();
             deviceId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
 
@@ -154,11 +155,12 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
 
     /**
      * Start collecting location and beacon data
+     *
      * @param view
      */
     public void startCollectingData(View view) {
 
-        if(!"Select airport".equals(airportCodeSpinner.getSelectedItem().toString())){
+        if (!"Select airport".equals(airportCodeSpinner.getSelectedItem().toString())) {
             endButton.setEnabled(true);
             startButton.setEnabled(false);
             saveUserDetailButton.setEnabled(false);
@@ -177,15 +179,14 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
             beaconManager.bind(this);
 
             // write to file - every 5 seconds
-            if(!receiverStarted){
+            if (!receiverStarted) {
                 receiverStarted = true;
                 beaconPublisherScheduler = Executors.newSingleThreadScheduledExecutor();
                 beaconPublisherScheduler.scheduleWithFixedDelay(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                        publishBeaconData();
-//                            publishSeperateBeaconData();
+                            publishBeaconData();
                         } catch (Throwable e) {
                             Log.e("Error : log beacon data", e.getMessage());
                         }
@@ -193,7 +194,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                 }, 0, 15, TimeUnit.SECONDS);
             }
         } else {
-            AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(context);
+            AlertDialog.Builder dlgAlert = new AlertDialog.Builder(context);
             dlgAlert.setMessage("Please select an airport before starting process");
             dlgAlert.setTitle("Cannot start process");
             dlgAlert.setPositiveButton("OK", null);
@@ -204,9 +205,10 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
 
     /**
      * Stop collecting location and beacon data
+     *
      * @param view
      */
-    public void stopCollectingData(View view){
+    public void stopCollectingData(View view) {
         beaconManager.unbind(this);
         beaconPublisherScheduler.shutdown();
         startButton.setEnabled(false);
@@ -222,14 +224,14 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
      * Initialize the UI fields
      */
     private void initUIFields() {
-        usernameText = (TextView)findViewById(R.id.username);
-        user_roleText = (TextView)findViewById(R.id.user_role);
+        usernameText = (TextView) findViewById(R.id.username);
+        user_roleText = (TextView) findViewById(R.id.user_role);
 
-        startButton = (Button)findViewById(R.id.startButton);
-        endButton = (Button)findViewById(R.id.endButton);
-        saveUserDetailButton = (Button)findViewById(R.id.save_user_detail);
+        startButton = (Button) findViewById(R.id.startButton);
+        endButton = (Button) findViewById(R.id.endButton);
+        saveUserDetailButton = (Button) findViewById(R.id.save_user_detail);
 
-        airportCodeSpinner = (Spinner)findViewById(R.id.airportCodeSpinner);
+        airportCodeSpinner = (Spinner) findViewById(R.id.airportCodeSpinner);
         ArrayAdapter<String> adapter;
         List<String> list;
 
@@ -329,6 +331,8 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
             application.put("version", version);
             mainObject.put("application", application);
             mainObject.put("deviceId", deviceId);
+            mainObject.put("username", usernameText.getText().toString());
+            mainObject.put("user_role", user_roleText.getText().toString());
             mainObject.put("languageCode", "en-US");
             mainObject.put("transactionId", "0804c882-ff9d-4a2f-a1e9-b4068808af97");
 
@@ -378,7 +382,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                     result.put("timestamp", dataRecord.getTimestamp());
                     results.put(result);
                 }
-            //sending gps log if  no beacon logs aren't retrieved
+                //sending gps log if  no beacon logs aren't retrieved
             } else {
                 if (mLastLocation != null) {
                     Double latitude = mLastLocation.getLatitude();
@@ -437,6 +441,8 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
             application.put("version", version);
             mainObject.put("application", application);
             mainObject.put("deviceId", deviceId);
+            mainObject.put("username", usernameText.getText().toString());
+            mainObject.put("user_role", user_roleText.getText().toString());
             mainObject.put("languageCode", "en-US");
             mainObject.put("transactionId", "0804c882-ff9d-4a2f-a1e9-b4068808af97");
 
@@ -513,11 +519,11 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
         }
     }
 
-    private void publishOrSaveData(JSONObject mainObject){
+    private void publishOrSaveData(JSONObject mainObject) {
         BufferedWriter buf;
-        String fileName = "beaconlog-"+ deviceId + ".log";
-        try{
-            if(!isOnline()){
+        String fileName = "beaconlog-" + deviceId + ".log";
+        try {
+            if (!isOnline()) {
                 File logFile = new File(Environment.getExternalStorageDirectory(), fileName);
                 if (!logFile.exists()) {
                     logFile.createNewFile();
@@ -572,8 +578,8 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                             JSONObject jobj = new JSONObject(message);
 
                             DefaultHttpClient httpclient = new DefaultHttpClient();
-//                            HttpPost httpost = new HttpPost("https://api.ual-mobile.com/LocationEvent/PublishAirportOpsLocationEvent");
-                            HttpPost httpost = new HttpPost("http://192.168.1.3:9763/endpoints/deleteHttpReceiver");
+                            HttpPost httpost = new HttpPost("https://api.ual-mobile.com/LocationEvent/PublishAirportOpsLocationEvent");
+//                            HttpPost httpost = new HttpPost("http://192.168.1.3:9763/endpoints/deleteHttpReceiver");
                             StringEntity se = null;
                             se = new StringEntity(jobj.toString());
                             httpost.setEntity(se);
@@ -584,7 +590,7 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                     }
                     this.runOnUiThread(new Runnable() {
                         public void run() {
-                            Toast toast =Toast.makeText(context, "previous data sent!", Toast.LENGTH_LONG);
+                            Toast toast = Toast.makeText(context, "previous data sent!", Toast.LENGTH_LONG);
                             toast.getView().setBackgroundColor(Color.parseColor("#FFF176"));
                             toast.show();
                         }
@@ -592,8 +598,8 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                     logFile.delete();
                 }
                 DefaultHttpClient httpclient = new DefaultHttpClient();
-//                HttpPost httpost = new HttpPost("https://api.ual-mobile.com/LocationEvent/PublishAirportOpsLocationEvent");
-                HttpPost httpost = new HttpPost("http://192.168.1.3:9763/endpoints/deleteHttpReceiver");
+                HttpPost httpost = new HttpPost("https://api.ual-mobile.com/LocationEvent/PublishAirportOpsLocationEvent");
+//                HttpPost httpost = new HttpPost("http://192.168.1.3:9763/endpoints/deleteHttpReceiver");
                 StringEntity se = null;
                 se = new StringEntity(mainObject.toString());
                 httpost.setEntity(se);
@@ -602,13 +608,13 @@ public class MainActivity extends ActionBarActivity implements BeaconConsumer, G
                 HttpResponse response2 = httpclient.execute(httpost);
                 this.runOnUiThread(new Runnable() {
                     public void run() {
-                        Toast toast =Toast.makeText(context, "current data sent!", Toast.LENGTH_LONG);
+                        Toast toast = Toast.makeText(context, "current data sent!", Toast.LENGTH_LONG);
                         toast.getView().setBackgroundColor(Color.parseColor("#388E3C"));
                         toast.show();
                     }
                 });
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             Log.e("Error : writing logs", e.getMessage());
         }
     }
